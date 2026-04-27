@@ -1,0 +1,27 @@
+# logs
+logs/
+*.log
+
+# dependencies
+node_modules/
+
+# build
+dist/
+dist-ssr/
+
+# env/local
+*.local
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# claude (если реально не нужен в репо)
+.claude/

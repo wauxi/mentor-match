@@ -1,0 +1,16 @@
+.avatar-tinted {
+  background: var(--avatar-color, var(--bg-soft));
+  color: #181d2a;
+}
+
+[data-theme="dark"] .avatar-tinted {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--avatar-color, transparent) 33%, transparent) 0%,
+      color-mix(in srgb, var(--avatar-color, transparent) 12%, transparent) 100%
+    ),
+    #2a3046;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}

@@ -1,0 +1,30 @@
+@keyframes rd-slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rd-fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes rd-cardIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes rd-matchPop {
+  from { opacity: 0; transform: scale(0.88) translateY(24px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes rd-sheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.rd-anim-slide-up { animation: rd-slideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.rd-anim-fade-in  { animation: rd-fadeIn 0.22s ease both; }
+.rd-anim-card-in  { animation: rd-cardIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.rd-anim-match-pop { animation: rd-matchPop 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.rd-anim-sheet-in { animation: rd-sheetIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }

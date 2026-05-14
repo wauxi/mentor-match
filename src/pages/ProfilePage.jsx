@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getProfile } from '../lib/api'
+import { getProfile } from '../utils/api'
 import {
   getInitials,
+  getProfileColor,
   ROLE_LABELS,
   ROLE_COPY,
   normalizeAvatarUrl,
   resolveFormatLabel,
   resolveUrgencyLabel,
-} from '../lib/ui'
+} from '../utils/ui'
 
 export default function ProfilePage() {
   const { id } = useParams()
@@ -35,108 +36,122 @@ export default function ProfilePage() {
     load()
   }, [id])
 
-  if (loading) return <div className="page-shell">Загрузка профиля...</div>
+  if (loading) {
+    return (
+      <div className="profile-view">
+        <div className="profile-view__status">Загрузка профиля…</div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="profile-view">
+        {error && <div className="profile-view__status profile-view__status--error">{error}</div>}
+        <div className="profile-view__status">Профиль недоступен.</div>
+      </div>
+    )
+  }
+
+  const avatarUrl = normalizeAvatarUrl(profile.avatar_url)
+  const showAvatarImage = avatarUrl && !avatarLoadFailed
+  const profileColor = profile.color || getProfileColor(profile.id ?? id)
+  const copy = ROLE_COPY[profile.role] ?? ROLE_COPY.mentee
+
+  const params = [
+    profile.format && ['Формат', resolveFormatLabel(profile.format)],
+    profile.availability > 0 && ['Часов в неделю', profile.availability],
+    profile.urgency && ['Срочность', resolveUrgencyLabel(profile.urgency)],
+    profile.commitment && ['Период', profile.commitment],
+  ].filter(Boolean)
 
   return (
-    <div className="page-shell">
-      <h1>Профиль</h1>
-      {error && <p className="error">{error}</p>}
+    <div className="profile-view">
+      <div className="profile-view__scroll">
+        {/* Hero */}
+        <section
+          className="glass profile-view__hero"
+          style={{ '--profile-color': profileColor }}
+        >
+          <div className="profile-view__hero-halo" />
 
-      {!profile ? (
-        <p className="muted">Профиль недоступен.</p>
-      ) : (
-        <div className="profile-layout">
-
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div className="profile-avatar">
-                {normalizeAvatarUrl(profile.avatar_url) && !avatarLoadFailed ? (
-                  <img
-                    src={normalizeAvatarUrl(profile.avatar_url)}
-                    alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                    onError={() => setAvatarLoadFailed(true)}
-                  />
-                ) : (
-                  <span className="profile-avatar-initials">{getInitials(profile.name)}</span>
-                )}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, wordBreak: 'break-word' }}>{profile.name ?? 'Без имени'}</h2>
-                <p className="muted" style={{ margin: '3px 0 0', fontSize: 13 }}>
-                  {ROLE_LABELS[profile.role] ?? profile.role}
-                  {profile.industry && ` · ${profile.industry}`}
-                  {profile.current_level && ` · ${profile.current_level}`}
-                </p>
-              </div>
-            </div>
-            {profile.bio && <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.6 }}>{profile.bio}</p>}
+          <div className="profile-view__avatar">
+            {showAvatarImage ? (
+              <img
+                src={avatarUrl}
+                alt=""
+                onError={() => setAvatarLoadFailed(true)}
+              />
+            ) : (
+              <span>{getInitials(profile.name)}</span>
+            )}
           </div>
 
-          {profile.tags?.length > 0 && (
-            <div className="card">
-              <p className="profile-section-label">Теги</p>
-              <div className="tags-grid">
-                {profile.tags.map((tag) => (
-                  <span key={tag} className="tag-chip selected">{tag}</span>
-                ))}
-              </div>
-            </div>
+          <div className="profile-view__hero-text">
+            <h1 className="profile-view__name">{profile.name ?? 'Без имени'}</h1>
+            <p className="profile-view__meta">
+              {ROLE_LABELS[profile.role] ?? profile.role}
+              {profile.industry && ` · ${profile.industry}`}
+              {profile.current_level && ` · ${profile.current_level}`}
+            </p>
+          </div>
+        </section>
+
+        {error && <div className="profile-view__status profile-view__status--error">{error}</div>}
+
+        {/* Content */}
+        <div className="profile-view__content">
+          {profile.bio && (
+            <section className="glass profile-view__section">
+              <h2 className="profile-view__section-title">О себе</h2>
+              <p className="profile-view__bio">{profile.bio}</p>
+            </section>
           )}
 
-          <div className="card">
-            <p className="profile-section-label">Параметры</p>
-            <div className="profile-fields">
-              {profile.format && (
-                <div className="profile-field">
-                  <span className="profile-field-label">Формат</span>
-                  <span>{resolveFormatLabel(profile.format)}</span>
-                </div>
-              )}
-              {profile.availability > 0 && (
-                <div className="profile-field">
-                  <span className="profile-field-label">Часов в неделю</span>
-                  <span>{profile.availability}</span>
-                </div>
-              )}
-              {profile.urgency && (
-                <div className="profile-field">
-                  <span className="profile-field-label">Срочность</span>
-                  <span>{resolveUrgencyLabel(profile.urgency)}</span>
-                </div>
-              )}
-              {profile.commitment && (
-                <div className="profile-field">
-                  <span className="profile-field-label">Период</span>
-                  <span>{profile.commitment}</span>
-                </div>
-              )}
-            </div>
-          </div>
+          {profile.tags?.length > 0 && (
+            <section className="glass profile-view__section">
+              <h2 className="profile-view__section-title">Навыки</h2>
+              <div className="profile-view__tags">
+                {profile.tags.map((tag) => (
+                  <span key={tag} className="profile-view__tag">{tag}</span>
+                ))}
+              </div>
+            </section>
+          )}
 
-          {(profile.goal || profile.request) && (() => {
-            const copy = ROLE_COPY[profile.role] ?? ROLE_COPY.mentee
-            return (
-            <div className="card">
-              <p className="profile-section-label">Цели</p>
+          {params.length > 0 && (
+            <section className="glass profile-view__section">
+              <h2 className="profile-view__section-title">Параметры</h2>
+              <div className="profile-view__rows">
+                {params.map(([label, value]) => (
+                  <div key={label} className="profile-view__row">
+                    <span className="profile-view__row-label">{label}</span>
+                    <span className="profile-view__row-value">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {(profile.goal || profile.request) && (
+            <section className="glass profile-view__section">
+              <h2 className="profile-view__section-title">Цели</h2>
               {profile.goal && (
-                <div className="profile-field col">
-                  <span className="profile-field-label">{copy.goalLabel}</span>
-                  <span>{profile.goal}</span>
+                <div className="profile-view__goal-block">
+                  <p className="profile-view__goal-label">{copy.goalLabel}</p>
+                  <p className="profile-view__goal-text">{profile.goal}</p>
                 </div>
               )}
               {profile.request && (
-                <div className="profile-field col">
-                  <span className="profile-field-label">{copy.requestLabel}</span>
-                  <span>{profile.request}</span>
+                <div className="profile-view__goal-block">
+                  <p className="profile-view__goal-label">{copy.requestLabel}</p>
+                  <p className="profile-view__goal-text">{profile.request}</p>
                 </div>
               )}
-            </div>
-            )
-          })()}
-
+            </section>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

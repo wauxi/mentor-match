@@ -1,5 +1,6 @@
-import { supabase } from './supabase'
-import { normalizeProfileFormat, normalizeUrgency } from './contracts/profileEnums'
+import { supabase }
+from './supabase'
+import { normalizeProfileFormat } from '../constants/profileEnums'
 
 export async function getFeed(limit = 30, offset = 0) {
   const { data, error } = await supabase.rpc('api_get_feed', {
@@ -35,7 +36,6 @@ export async function getProfilesBatch(ids) {
 
 export async function upsertOnboardingProfile(userId, values) {
   const canonicalFormat = normalizeProfileFormat(values.format, { fallback: null })
-  const canonicalUrgency = normalizeUrgency(values.urgency, { fallback: null })
 
   const payload = {
     id: userId,
@@ -45,7 +45,6 @@ export async function upsertOnboardingProfile(userId, values) {
     industry: values.industry || null,
     goal: values.goal || null,
     format: canonicalFormat,
-    urgency: canonicalUrgency,
     commitment: values.commitment || null,
     tags: Array.isArray(values.tags) ? values.tags : [],
     current_level: values.current_level || null,

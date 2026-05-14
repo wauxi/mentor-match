@@ -6,11 +6,30 @@ import {
   getUrgencyLabel,
   normalizeProfileFormat,
   normalizeUrgency,
-} from './contracts/profileEnums'
+} from '../constants/profileEnums'
 
 export function getInitials(name) {
   if (!name) return '?'
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
+const PROFILE_COLOR_PALETTE = [
+  '#c8d4ff', // soft blue
+  '#ffd6e0', // pink
+  '#d4f0e8', // mint
+  '#fff3cd', // yellow
+  '#ffe8d6', // peach
+  '#e0d4ff', // lavender
+]
+
+export function getProfileColor(seed) {
+  const key = String(seed ?? '')
+  if (!key) return PROFILE_COLOR_PALETTE[0]
+  let hash = 0
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  }
+  return PROFILE_COLOR_PALETTE[hash % PROFILE_COLOR_PALETTE.length]
 }
 
 export function normalizeAvatarUrl(avatarUrl) {
@@ -32,7 +51,7 @@ export const ROLE_COPY = {
     requestPlaceholder: 'Опишите, с кем хотите работать',
   },
   mentee: {
-    goalLabel: 'Цель наставничества',
+    goalLabel: 'Ваша цель',
     goalPlaceholder: 'Чего хотите достичь?',
     requestLabel: 'Запрос к наставнику',
     requestPlaceholder: 'С чем нужна помощь?',

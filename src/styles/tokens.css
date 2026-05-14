@@ -1,0 +1,50 @@
+:root {
+  --accent-light: #eaedff;
+  --success-light: #e6f4ee;
+  --error-light: #fff0f0;
+  --border: #e8ebed;
+
+  --nav-h: 72px;
+
+  --glass-bg: #ffffff99;
+  --glass-border: #b4c8ff80;
+  --glass-deep-bg: #ffffffbf;
+
+  --aurora-1: #a8baff;
+  --aurora-2: #c8a8ff;
+  --aurora-3: #b8d0ff;
+
+  --shell-bg: linear-gradient(180deg, #f7f9ff 0%, #e8eeff 60%, #f4ecff 100%);
+
+  --body-bg: linear-gradient(180deg, #f7f9ff 0%, #e8eeff 100%);
+
+  --sheet-bg: linear-gradient(180deg, #ffffff 0%, #eaf0ff 60%, #dde7ff 100%);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e1118;
+  --bg-soft: #1a1f2b;
+  --bg-card: #1a1f2b;
+  --text: #f0f2f7;
+  --text-light: #7a8499;
+  --accent: #9aaeff;
+  --accent-light: #9aaeff2e;
+  --success: #5dd9a8;
+  --success-light: #5dd9a829;
+  --error: #ff7a7a;
+  --error-light: #ff7a7a29;
+  --muted: #7a8499;
+  --border: #ffffff14;
+
+  --glass-bg: #1c202c8c;
+  --glass-border: #ffffff14;
+  --glass-deep-bg: #1c202cd9;
+
+  --aurora-1: #3a4a8c;
+  --aurora-2: #7a2a4d;
+  --aurora-3: #1f5648;
+
+  --shell-bg: linear-gradient(180deg, #0e1118 0%, #16192a 100%);
+  --body-bg: linear-gradient(180deg, #0a0d14 0%, #14182a 100%);
+  --sheet-bg: linear-gradient(180deg, #1c2233 0%, #161a26 100%);
+}

@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
-import { deleteMyAccount } from '../lib/api'
+import { ChevronRight, Globe, LogOut, Moon, Trash2, User } from 'lucide-react'
+import { deleteMyAccount } from '../utils/api'
 import { useAuth } from '../context/useAuth'
+import { useTheme } from '../context/useTheme'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const { signOut } = useAuth()
+  const { isDark, toggleTheme } = useTheme()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const onEditProfile = () => navigate('/onboarding')
 
   const onSignOut = async () => {
     await signOut()
@@ -42,50 +46,85 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="page-shell">
-      <h1>Настройки</h1>
+    <div className="settings-page">
+      <div className="settings-page__header">
+        <h1 className="settings-page__title">Настройки</h1>
+      </div>
 
-      <article className="card" style={{ marginBottom: 12 }}>
-        <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>
-          Выйти из текущего аккаунта. Данные сохранятся.
-        </p>
-        <button
-          onClick={onSignOut}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'var(--bg-soft)',
-            color: 'var(--text)',
-            border: 'none',
-            borderRadius: 10,
-            padding: '12px 16px',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            width: '100%',
-            justifyContent: 'center',
-          }}
-        >
-          <LogOut size={18} strokeWidth={1.8} />
-          Выйти из аккаунта
-        </button>
-      </article>
+      <div className="settings-page__scroll">
+        {/* Аккаунт */}
+        <div>
+          <h2 className="settings-group__title">Аккаунт</h2>
+          <div className="glass settings-group__card">
+            <button type="button" className="settings-item" onClick={onEditProfile}>
+              <span className="settings-item__icon settings-item__icon--profile">
+                <User size={16} strokeWidth={2.2} />
+              </span>
+              <span className="settings-item__label">Редактировать профиль</span>
+              <ChevronRight size={16} className="settings-item__chevron" />
+            </button>
+          </div>
+        </div>
 
-      <article className="card">
-        <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>
-          Удаление аккаунта необратимо — все данные, свайпы и мэтчи будут удалены.
-        </p>
-        {error && <p className="error">{error}</p>}
-        <button
-          className="danger"
-          style={{ width: '100%', padding: '12px 16px', fontSize: 14, fontWeight: 600, borderRadius: 10 }}
-          onClick={onDeleteAccount}
-          disabled={loading}
-        >
-          {loading ? 'Удаляем...' : 'Удалить аккаунт'}
-        </button>
-      </article>
+        {/* Приложение */}
+        <div>
+          <h2 className="settings-group__title">Приложение</h2>
+          <div className="glass settings-group__card">
+            <button
+              type="button"
+              className="settings-item"
+              onClick={toggleTheme}
+              aria-pressed={isDark}
+            >
+              <span className="settings-item__icon settings-item__icon--theme">
+                <Moon fill="#fff" size={14} strokeWidth={1} />
+              </span>
+              <span className="settings-item__label">Тёмная тема</span>
+              <span className={'settings-toggle' + (isDark ? ' settings-toggle--on' : '')}>
+                <span className="settings-toggle__thumb" />
+              </span>
+            </button>
+
+            <button type="button" className="settings-item" disabled>
+              <span className="settings-item__icon settings-item__icon--lang">
+                <Globe size={16} strokeWidth={2.2} />
+              </span>
+              <span className="settings-item__label">Язык</span>
+              <span className="settings-item__value">Русский</span>
+              <ChevronRight size={16} className="settings-item__chevron" />
+            </button>
+          </div>
+        </div>
+
+        {/* Опасная зона */}
+        <div>
+          <div className="glass settings-group__card">
+            <button type="button" className="settings-item" onClick={onSignOut}>
+              <span className="settings-item__icon settings-item__icon--logout">
+                <LogOut size={16} strokeWidth={2.2} />
+              </span>
+              <span className="settings-item__label">Выйти из аккаунта</span>
+            </button>
+
+            <button
+              type="button"
+              className="settings-item"
+              onClick={onDeleteAccount}
+              disabled={loading}
+            >
+              <span className="settings-item__icon settings-item__icon--delete">
+                <Trash2 size={16} strokeWidth={2.2} />
+              </span>
+              <span className="settings-item__label settings-item__label--danger">
+                {loading ? 'Удаляем…' : 'Удалить аккаунт'}
+              </span>
+            </button>
+          </div>
+          {error && <p className="settings-page__error">{error}</p>}
+        </div>
+
+        <div className="settings-page__version">Mentor Match v1.0.0</div>
+      </div>
     </div>
   )
 }

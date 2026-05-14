@@ -1,8 +1,8 @@
-import { Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
-import { Settings, User, Layers, MessageCircle } from 'lucide-react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './context/useAuth'
 import PrivateRoute from './components/PrivateRoute'
 import ProfileRoute from './components/ProfileRoute'
+import BottomNav from './layouts/BottomNav'
 import LoginPage from './pages/LoginPage'
 import OnboardingPage from './pages/OnboardingPage'
 import SwipePage from './pages/SwipePage'
@@ -13,32 +13,23 @@ import SettingsPage from './pages/SettingsPage'
 
 function App() {
   const { user, loading, profileComplete } = useAuth()
-  const navigate = useNavigate()
+  const location = useLocation()
 
-  const showChrome = user && profileComplete === true && !loading
+  const showChrome = user && profileComplete === true && !loading && location.pathname !== '/onboarding'
 
   return (
-    <div className="app-layout">
-      {showChrome && (
-        <header className="topbar">
-          <button className="icon-btn" onClick={() => navigate('/settings')}>
-            <Settings size={20} color="#181d2a" strokeWidth={1.5} />
-          </button>
-          <button className="icon-btn" onClick={() => navigate('/profile/me')}>
-            <User size={20} color="#181d2a" strokeWidth={1.5} />
-          </button>
-        </header>
-      )}
+    <div className="app-shell">
+      <div className="aurora"><div className="blob3" /></div>
 
-      <main className={showChrome ? 'main-content' : 'main-content main-content--bare'}>
+      <main className="app-shell__content">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/onboarding" element={<PrivateRoute><OnboardingPage /></PrivateRoute>} />
-          <Route path="/swipe"      element={<ProfileRoute><SwipePage /></ProfileRoute>} />
-          <Route path="/matches"    element={<ProfileRoute><MatchesPage /></ProfileRoute>} />
+          <Route path="/swipe" element={<ProfileRoute><SwipePage /></ProfileRoute>} />
+          <Route path="/matches" element={<ProfileRoute><MatchesPage /></ProfileRoute>} />
           <Route path="/profile/me" element={<ProfileRoute><MyProfilePage /></ProfileRoute>} />
           <Route path="/profile/:id" element={<ProfileRoute><ProfilePage /></ProfileRoute>} />
-          <Route path="/settings"   element={<ProfileRoute><SettingsPage /></ProfileRoute>} />
+          <Route path="/settings" element={<ProfileRoute><SettingsPage /></ProfileRoute>} />
           <Route path="*" element={
             !user
               ? <Navigate to="/login" replace />
@@ -49,24 +40,7 @@ function App() {
         </Routes>
       </main>
 
-      {showChrome && (
-        <nav className="bottom-nav">
-          <NavLink
-            to="/swipe"
-            className={({ isActive }) => 'bottom-nav-item' + (isActive ? ' active' : '')}
-          >
-            <Layers size={22} strokeWidth={1.5} />
-            <span className="bottom-nav-label">Лента</span>
-          </NavLink>
-          <NavLink
-            to="/matches"
-            className={({ isActive }) => 'bottom-nav-item' + (isActive ? ' active' : '')}
-          >
-            <MessageCircle size={22} strokeWidth={1.5} />
-            <span className="bottom-nav-label">Мэтчи</span>
-          </NavLink>
-        </nav>
-      )}
+      {showChrome && <BottomNav />}
     </div>
   )
 }

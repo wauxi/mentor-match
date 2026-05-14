@@ -1,0 +1,116 @@
+.aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.8;
+}
+.aurora::before {
+  width: 420px;
+  height: 420px;
+  top: -100px;
+  left: -120px;
+  background: radial-gradient(circle, var(--aurora-1) 0%, transparent 70%);
+}
+.aurora::after {
+  width: 380px;
+  height: 380px;
+  bottom: -140px;
+  right: -80px;
+  background: radial-gradient(circle, var(--aurora-2) 0%, transparent 70%);
+}
+.aurora .blob3 {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.6;
+  top: 38%;
+  right: -60px;
+  background: radial-gradient(circle, var(--aurora-3) 0%, transparent 70%);
+}
+[data-theme="dark"] .aurora::before,
+[data-theme="dark"] .aurora::after,
+[data-theme="dark"] .aurora .blob3 {
+  opacity: 0.55;
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 8px 32px rgba(80, 110, 200, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+[data-theme="dark"] .glass {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+
+.bottom-nav-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(180, 200, 255, 0.55);
+  box-shadow:
+    0 -2px 20px rgba(80, 110, 200, 0.1),
+    0 10px 30px rgba(80, 110, 200, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+[data-theme="dark"] .bottom-nav-glass {
+  background: rgba(28, 32, 44, 0.78);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Tile-glass — мелкие плашки внутри карточек.
+   Намеренно БЕЗ backdrop-filter для экономии GPU. */
+.tile-glass {
+  background: rgba(150, 180, 255, 0.16);
+  border: 1px solid rgba(120, 150, 255, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+[data-theme="dark"] .tile-glass {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Sheet-card — стабильная поверхность для bottom sheet и match popup.
+   Использует градиент вместо backdrop - не зависит от фона за ней. */
+.sheet-card {
+  background: var(--sheet-bg);
+  border: 1px solid rgba(180, 200, 255, 0.6);
+  box-shadow:
+    0 -8px 32px rgba(80, 110, 200, 0.18),
+    0 12px 40px rgba(80, 110, 200, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+[data-theme="dark"] .sheet-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 -8px 32px rgba(0, 0, 0, 0.5),
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.app-shell-bg {
+  background: var(--shell-bg);
+}

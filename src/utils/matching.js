@@ -3,7 +3,7 @@ import {
   formatFromAvailability,
   getProfileFormatLabel,
   normalizeProfileFormat,
-} from './contracts/profileEnums'
+} from '../constants/profileEnums'
 
 const WEIGHTS = {
   category: 30,

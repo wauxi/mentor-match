@@ -1,0 +1,231 @@
+.onboarding {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.onboarding__progress {
+  padding: 16px 20px 0;
+  flex-shrink: 0;
+}
+.onboarding__progress-bars {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.onboarding__progress-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--bg-soft);
+  transition: background 0.3s ease;
+}
+.onboarding__progress-bar--filled {
+  background: var(--accent);
+}
+.onboarding__progress-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Scroll */
+.onboarding__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 24px;
+}
+
+.onboarding__step {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: rd-slideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.onboarding__heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+
+.onboarding__avatar-wrap {
+  display: flex;
+  justify-content: center;
+}
+.onboarding__avatar {
+  position: relative;
+  width: 88px;
+  height: 88px;
+}
+.onboarding__avatar-circle {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--muted);
+  overflow: hidden;
+}
+.onboarding__avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.onboarding__avatar-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.onboarding__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.onboarding__field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.onboarding__field-label-muted {
+  font-weight: 400;
+}
+.onboarding__field-counter {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+  margin: 0;
+}
+.onboarding__field-error {
+  color: var(--error);
+  font-size: 13px;
+  margin: 0;
+}
+
+.onboarding__input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  font-size: 16px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+.onboarding__input:focus {
+  border-color: var(--accent);
+}
+.onboarding__input--textarea {
+  font-size: 15px;
+  line-height: 1.6;
+  resize: none;
+  min-height: 80px;
+}
+.onboarding__input--error {
+  border-color: var(--error);
+}
+
+.onboarding__toggle-row {
+  display: flex;
+  gap: 10px;
+}
+.onboarding__toggle-row .onboarding__chip {
+  flex: 1;
+  padding: 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.onboarding__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.onboarding__chip {
+  padding: 9px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.onboarding__chip:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.onboarding__chip--active {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.onboarding__footer {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+.onboarding__btn-ghost {
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: var(--bg-soft);
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+.onboarding__btn-primary {
+  flex: 1;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--accent);
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 33%, transparent);
+}
+.onboarding__btn-primary:disabled {
+  background: color-mix(in srgb, var(--accent) 50%, #fff);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.onboarding__loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

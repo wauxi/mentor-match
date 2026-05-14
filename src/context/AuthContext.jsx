@@ -1,6 +1,6 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { getMyProfile } from '../lib/api'
+import { supabase } from '../utils/supabase'
+import { getMyProfile } from '../utils/api'
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null)

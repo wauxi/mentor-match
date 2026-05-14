@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { useAuth } from '../context/useAuth'
-import { upsertOnboardingProfile, getMyProfile, uploadAvatar } from '../lib/api'
-import { getInitials, ROLE_COPY } from '../lib/ui'
+import { upsertOnboardingProfile, getMyProfile, uploadAvatar } from '../utils/api'
+import { getInitials, ROLE_COPY } from '../utils/ui'
 import {
   PROFILE_FORMAT_OPTIONS,
-  PROFILE_URGENCY_OPTIONS,
   normalizeProfileFormat,
-  normalizeUrgency,
-} from '../lib/contracts/profileEnums'
+} from '../constants/profileEnums'
 
 const INDUSTRIES = ['IT', 'Fintech', 'EdTech', 'Healthcare', 'Marketing', 'Design', 'Startup', 'Другое']
 const LEVELS = ['Junior', 'Middle', 'Senior', 'Lead']
@@ -18,7 +17,6 @@ const BIO_MAX = 300
 const GOAL_MAX = 300
 const REQUEST_MAX = 300
 
-// All skills known to the app — superset of old and new tags so DB values always render
 const BASE_SKILLS = [
   'Product', 'Agile', 'B2B', 'SaaS', 'MVP', 'Growth',
   'Strategy', 'Data', 'Design', 'Marketing', 'Leadership', 'Sales',
@@ -32,6 +30,7 @@ const BASE_SKILLS = [
 ]
 
 const TOTAL = 3
+const STEP_TITLES = ['О себе', 'Параметры', 'Цели']
 
 const autoResize = (el) => {
   if (!el) return
@@ -62,9 +61,7 @@ export default function OnboardingPage() {
 
   const [profileLoading, setProfileLoading] = useState(true)
   const [step, setStep] = useState(1)
-  const [slideDir, setSlideDir] = useState('forward')
 
-  // Step 1
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
   const [avatarUrl, setAvatarUrl] = useState(null)
@@ -72,19 +69,15 @@ export default function OnboardingPage() {
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
 
-  // Step 2
   const [industry, setIndustry] = useState('')
   const [level, setLevel] = useState('')
   const [format, setFormat] = useState('')
   const [skills, setSkills] = useState([])
-  const [extraSkills, setExtraSkills] = useState([]) // DB tags not in BASE_SKILLS
+  const [extraSkills, setExtraSkills] = useState([])
 
-  // Step 2 — availability
   const [availability, setAvailability] = useState('')
   const [availabilityError, setAvailabilityError] = useState('')
 
-  // Step 3
-  const [urgency, setUrgency] = useState('')
   const [goal, setGoal] = useState('')
   const [request, setRequest] = useState('')
   const [commitment, setCommitment] = useState('')
@@ -105,13 +98,11 @@ export default function OnboardingPage() {
           if (existing.industry) setIndustry(existing.industry)
           if (existing.goal) setGoal(existing.goal)
           if (existing.format) setFormat(normalizeProfileFormat(existing.format, { fallback: '' }))
-          if (existing.urgency) setUrgency(normalizeUrgency(existing.urgency, { fallback: '' }))
           if (existing.commitment) setCommitment(existing.commitment)
           if (existing.current_level) setLevel(existing.current_level)
           if (existing.request) setRequest(existing.request)
           if (existing.tags?.length) {
             setSkills(existing.tags)
-            // Surface any DB tags that aren't in our preset list as extra chips
             const extra = existing.tags.filter((t) => !BASE_SKILLS.includes(t))
             if (extra.length) setExtraSkills(extra)
           }
@@ -136,13 +127,12 @@ export default function OnboardingPage() {
             else setAvailability(String(Math.min(40, Number.parseInt(digits, 10))))
           }
           if (Array.isArray(draft.skills)) setSkills(draft.skills)
-          if (typeof draft.urgency === 'string') setUrgency(normalizeUrgency(draft.urgency, { fallback: '' }))
           if (typeof draft.goal === 'string') setGoal(draft.goal)
           if (typeof draft.request === 'string') setRequest(draft.request)
           if (typeof draft.commitment === 'string') setCommitment(draft.commitment)
         }
       } catch {
-        // first-time user — no profile row yet, that's fine
+        // first-time user
       } finally {
         draftHydratedRef.current = true
         setProfileLoading(false)
@@ -154,22 +144,11 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!draftHydratedRef.current) return
     const draft = {
-      step,
-      role,
-      name,
-      bio,
-      industry,
-      level,
-      format,
-      availability,
-      skills,
-      urgency,
-      goal,
-      request,
-      commitment,
+      step, role, name, bio, industry, level, format,
+      availability, skills, goal, request, commitment,
     }
     localStorage.setItem(storageKey, JSON.stringify(draft))
-  }, [step, role, name, bio, industry, level, format, availability, skills, urgency, goal, request, commitment, storageKey])
+  }, [step, role, name, bio, industry, level, format, availability, skills, goal, request, commitment, storageKey])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'instant' })
@@ -215,7 +194,6 @@ export default function OnboardingPage() {
     }
 
     if (step < TOTAL) {
-      setSlideDir('forward')
       setStep((s) => s + 1)
     } else {
       handleSave()
@@ -223,10 +201,7 @@ export default function OnboardingPage() {
   }
 
   const goBack = () => {
-    if (step > 1) {
-      setSlideDir('back')
-      setStep((s) => s - 1)
-    }
+    if (step > 1) setStep((s) => s - 1)
   }
 
   const handleSave = async () => {
@@ -252,10 +227,6 @@ export default function OnboardingPage() {
         nextAvatarUrl = await uploadAvatar(user.id, photoFile)
         setAvatarUrl(nextAvatarUrl)
       }
-      
-      const safeSkills = [...skills]
-
-      console.log("FINAL SKILLS:", safeSkills) // 👈 дебаг
 
       await upsertOnboardingProfile(user.id, {
         name: trimmedName,
@@ -264,7 +235,6 @@ export default function OnboardingPage() {
         industry,
         goal: trimmedGoal,
         format: format || null,
-        urgency: urgency || null,
         commitment,
         tags: skills,
         current_level: level,
@@ -283,58 +253,60 @@ export default function OnboardingPage() {
     }
   }
 
-  const progress = `${(step / TOTAL) * 100}%`
   const stepOneValid = !getRequiredFieldErrors({ name, goal: 'ok', request: 'ok' }, role).name
   const stepThreeErrors = getRequiredFieldErrors({ name: 'ok', goal, request }, role)
   const stepThreeValid = !stepThreeErrors.goal && !stepThreeErrors.request
   const isPrimaryDisabled = loading || (step === 1 && !stepOneValid) || (step === TOTAL && !stepThreeValid)
+  const copy = ROLE_COPY[role] ?? ROLE_COPY.mentee
 
   if (profileLoading) {
     return (
-      <div className="ob2-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div className="loading-spinner" />
+      <div className="onboarding">
+        <div className="onboarding__loading">
+          <div className="loading-spinner" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="ob2-shell">
+    <div className="onboarding">
       {/* Progress */}
-      <div className="ob2-progress-wrap">
-        <p className="ob2-step-label">Шаг {step} из {TOTAL}</p>
-        <div className="ob2-progress-bar">
-          <div className="ob2-progress-fill" style={{ width: progress }} />
+      <div className="onboarding__progress">
+        <div className="onboarding__progress-bars">
+          {STEP_TITLES.map((_, i) => (
+            <div
+              key={i}
+              className={
+                'onboarding__progress-bar' +
+                (i < step ? ' onboarding__progress-bar--filled' : '')
+              }
+            />
+          ))}
         </div>
+        <p className="onboarding__progress-label">
+          Шаг {step} из {TOTAL} · {STEP_TITLES[step - 1]}
+        </p>
       </div>
 
-      {/* Scroll area */}
-      <div className="ob2-scroll" ref={scrollRef}>
+      {/* Scroll */}
+      <div className="onboarding__scroll" ref={scrollRef}>
         {step === 1 && (
-          <div className={`ob2-step ob2-step--${slideDir}`} key="step1">
-            <h1 className="ob2-heading">
+          <div className="onboarding__step" key="step1">
+            <h1 className="onboarding__heading">
               {profileComplete === true ? 'Редактирование профиля' : 'Расскажите о себе'}
             </h1>
 
-            <div className="ob2-avatar-picker">
-              <div className="ob2-avatar-main">
-                {photoPreview ? (
-                  <img src={photoPreview} alt="" className="ob2-avatar-main-img" />
-                ) : (
-                  <div
-                    className="ob2-avatar-main-img"
-                    style={{
-                      background: '#e8ebed',
-                      color: '#9BA3AF',
-                      fontSize: 28,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {getInitials(name)}
-                  </div>
-                )}
+            {/* Avatar */}
+            <div className="onboarding__avatar-wrap">
+              <div className="onboarding__avatar">
+                <div className="onboarding__avatar-circle">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="" />
+                  ) : (
+                    <span>{name ? getInitials(name) : '?'}</span>
+                  )}
+                </div>
                 <input
                   ref={fileRef}
                   type="file"
@@ -344,19 +316,19 @@ export default function OnboardingPage() {
                 />
                 <button
                   type="button"
-                  className="ob2-avatar-upload-btn"
+                  className="onboarding__avatar-btn"
                   onClick={() => fileRef.current?.click()}
+                  aria-label="Загрузить фото"
                 >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 2v10M2 7h10" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
+                  <Plus size={14} strokeWidth={2.4} />
                 </button>
               </div>
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Я являюсь</span>
-              <div className="ob2-toggle-group">
+            {/* Role */}
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">Я являюсь</span>
+              <div className="onboarding__toggle-row">
                 {[
                   { value: 'mentor', label: 'Наставник' },
                   { value: 'mentee', label: 'Наставляемый' },
@@ -364,7 +336,9 @@ export default function OnboardingPage() {
                   <button
                     key={r.value}
                     type="button"
-                    className={`ob2-toggle ob2-toggle--flex${role === r.value ? ' active' : ''}`}
+                    className={
+                      'onboarding__chip' + (role === r.value ? ' onboarding__chip--active' : '')
+                    }
                     onClick={() => setRole(r.value)}
                   >
                     {r.label}
@@ -373,10 +347,13 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Имя</span>
+            {/* Name */}
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">Имя</span>
               <input
-                className={`ob2-input${fieldErrors.name ? ' ob2-input--error' : ''}`}
+                className={
+                  'onboarding__input' + (fieldErrors.name ? ' onboarding__input--error' : '')
+                }
                 placeholder="Ваше имя"
                 value={name}
                 maxLength={NAME_MAX}
@@ -384,9 +361,9 @@ export default function OnboardingPage() {
                 autoComplete="name"
                 aria-invalid={Boolean(fieldErrors.name)}
                 onChange={(e) => {
-                  const nextValue = e.target.value
-                  setName(nextValue)
-                  if (nextValue.trim()) {
+                  const v = e.target.value
+                  setName(v)
+                  if (v.trim()) {
                     setFieldErrors((prev) => {
                       if (!prev.name) return prev
                       const { name: _omit, ...rest } = prev
@@ -395,39 +372,45 @@ export default function OnboardingPage() {
                   }
                 }}
               />
-              <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'right' }}>{name.length}/{NAME_MAX}</div>
+              <div className="onboarding__field-counter">{name.length}/{NAME_MAX}</div>
               {fieldErrors.name && (
-                <p style={{ color: 'var(--error)', fontSize: 13, margin: '6px 0 0' }}>{fieldErrors.name}</p>
+                <p className="onboarding__field-error">{fieldErrors.name}</p>
               )}
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">О себе</span>
+            {/* Bio */}
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">
+                О себе <span className="onboarding__field-label-muted">(необязательно)</span>
+              </span>
               <textarea
                 ref={bioRef}
-                className="ob2-input"
-                placeholder="Расскажите о себе..."
+                rows={3}
+                className="onboarding__input onboarding__input--textarea"
+                placeholder="Расскажите о своём опыте..."
                 value={bio}
                 maxLength={BIO_MAX}
                 onChange={(e) => setBio(e.target.value)}
               />
-              <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'right' }}>{bio.length}/{BIO_MAX}</div>
+              <div className="onboarding__field-counter">{bio.length}/{BIO_MAX}</div>
             </div>
           </div>
         )}
 
         {step === 2 && (
-          <div className={`ob2-step ob2-step--${slideDir}`} key="step2">
-            <h1 className="ob2-heading">Параметры подбора</h1>
+          <div className="onboarding__step" key="step2">
+            <h1 className="onboarding__heading">Параметры подбора</h1>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Индустрия</span>
-              <div className="ob2-toggle-group">
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">Индустрия</span>
+              <div className="onboarding__chips">
                 {INDUSTRIES.map((ind) => (
                   <button
                     key={ind}
                     type="button"
-                    className={`ob2-toggle${industry === ind ? ' active' : ''}`}
+                    className={
+                      'onboarding__chip' + (industry === ind ? ' onboarding__chip--active' : '')
+                    }
                     onClick={() => setIndustry(industry === ind ? '' : ind)}
                   >
                     {ind}
@@ -436,14 +419,16 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Уровень</span>
-              <div className="ob2-toggle-group">
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">Уровень</span>
+              <div className="onboarding__chips">
                 {LEVELS.map((l) => (
                   <button
                     key={l}
                     type="button"
-                    className={`ob2-toggle${level === l ? ' active' : ''}`}
+                    className={
+                      'onboarding__chip' + (level === l ? ' onboarding__chip--active' : '')
+                    }
                     onClick={() => setLevel(l)}
                   >
                     {l}
@@ -452,14 +437,16 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Формат</span>
-              <div className="ob2-toggle-group">
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">Формат</span>
+              <div className="onboarding__chips">
                 {PROFILE_FORMAT_OPTIONS.map((f) => (
                   <button
                     key={f.value}
                     type="button"
-                    className={`ob2-toggle${format === f.value ? ' active' : ''}`}
+                    className={
+                      'onboarding__chip' + (format === f.value ? ' onboarding__chip--active' : '')
+                    }
                     onClick={() => setFormat(f.value)}
                   >
                     {f.label}
@@ -468,10 +455,13 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Часов в неделю</span>
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">Часов в неделю</span>
               <input
-                className={`ob2-input${availabilityError ? ' ob2-input--error' : ''}`}
+                className={
+                  'onboarding__input' +
+                  (availabilityError ? ' onboarding__input--error' : '')
+                }
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -480,21 +470,18 @@ export default function OnboardingPage() {
                 value={availability}
                 aria-invalid={Boolean(availabilityError)}
                 onChange={(e) => {
-                  const raw = e.target.value
-                  const digits = raw.replace(/\D/g, '')
+                  const digits = e.target.value.replace(/\D/g, '')
                   if (!digits) {
                     setAvailability('')
                     setAvailabilityError('')
                     return
                   }
-
                   const parsed = Number.parseInt(digits, 10)
                   if (parsed > 40) {
                     setAvailability('40')
                     setAvailabilityError('Максимум 40 часов в неделю')
                     return
                   }
-
                   setAvailability(String(parsed))
                   setAvailabilityError('')
                 }}
@@ -520,23 +507,25 @@ export default function OnboardingPage() {
                 }}
               />
               {availabilityError && (
-                <p style={{ color: 'var(--error)', fontSize: 13, margin: '6px 0 0' }}>{availabilityError}</p>
+                <p className="onboarding__field-error">{availabilityError}</p>
               )}
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">
                 Навыки
                 {skills.length > 0 && (
-                  <span className="ob2-field-label-muted"> · выбрано {skills.length}/8</span>
+                  <span className="onboarding__field-label-muted"> · выбрано {skills.length}/8</span>
                 )}
               </span>
-              <div className="ob2-chips-group">
+              <div className="onboarding__chips">
                 {allSkills.map((s) => (
                   <button
                     key={s}
                     type="button"
-                    className={`ob2-chip${skills.includes(s) ? ' active' : ''}`}
+                    className={
+                      'onboarding__chip' + (skills.includes(s) ? ' onboarding__chip--active' : '')
+                    }
                     onClick={() => toggleSkill(s)}
                   >
                     {s}
@@ -547,41 +536,29 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 3 && (() => {
-          const copy = ROLE_COPY[role] ?? ROLE_COPY.mentee
-          return (
-          <div className={`ob2-step ob2-step--${slideDir}`} key="step3">
-            <h1 className="ob2-heading">{role === 'mentor' ? 'О вашей работе' : 'Ваши цели'}</h1>
+        {step === 3 && (
+          <div className="onboarding__step" key="step3">
+            <h1 className="onboarding__heading">
+              {role === 'mentor' ? 'О вашей работе' : 'Ваши цели'}
+            </h1>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Срочность</span>
-              <div className="ob2-toggle-group">
-                {PROFILE_URGENCY_OPTIONS.map((u) => (
-                  <button
-                    key={u.value}
-                    type="button"
-                    className={`ob2-toggle${urgency === u.value ? ' active' : ''}`}
-                    onClick={() => setUrgency(u.value)}
-                  >
-                    {u.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="ob2-field">
-              <span className="ob2-field-label">{copy.goalLabel}</span>
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">{copy.goalLabel}</span>
               <textarea
                 ref={goalRef}
-                className={`ob2-input${fieldErrors.goal ? ' ob2-input--error' : ''}`}
+                rows={4}
+                className={
+                  'onboarding__input onboarding__input--textarea' +
+                  (fieldErrors.goal ? ' onboarding__input--error' : '')
+                }
                 placeholder={copy.goalPlaceholder}
                 value={goal}
                 maxLength={GOAL_MAX}
                 aria-invalid={Boolean(fieldErrors.goal)}
                 onChange={(e) => {
-                  const nextValue = e.target.value
-                  setGoal(nextValue)
-                  if (nextValue.trim()) {
+                  const v = e.target.value
+                  setGoal(v)
+                  if (v.trim()) {
                     setFieldErrors((prev) => {
                       if (!prev.goal) return prev
                       const { goal: _omit, ...rest } = prev
@@ -590,25 +567,29 @@ export default function OnboardingPage() {
                   }
                 }}
               />
-              <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'right' }}>{goal.length}/{GOAL_MAX}</div>
+              <div className="onboarding__field-counter">{goal.length}/{GOAL_MAX}</div>
               {fieldErrors.goal && (
-                <p style={{ color: 'var(--error)', fontSize: 13, margin: '6px 0 0' }}>{fieldErrors.goal}</p>
+                <p className="onboarding__field-error">{fieldErrors.goal}</p>
               )}
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">{copy.requestLabel}</span>
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">{copy.requestLabel}</span>
               <textarea
                 ref={requestRef}
-                className={`ob2-input${fieldErrors.request ? ' ob2-input--error' : ''}`}
+                rows={4}
+                className={
+                  'onboarding__input onboarding__input--textarea' +
+                  (fieldErrors.request ? ' onboarding__input--error' : '')
+                }
                 placeholder={copy.requestPlaceholder}
                 value={request}
                 maxLength={REQUEST_MAX}
                 aria-invalid={Boolean(fieldErrors.request)}
                 onChange={(e) => {
-                  const nextValue = e.target.value
-                  setRequest(nextValue)
-                  if (nextValue.trim()) {
+                  const v = e.target.value
+                  setRequest(v)
+                  if (v.trim()) {
                     setFieldErrors((prev) => {
                       if (!prev.request) return prev
                       const { request: _omit, ...rest } = prev
@@ -617,20 +598,22 @@ export default function OnboardingPage() {
                   }
                 }}
               />
-              <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'right' }}>{request.length}/{REQUEST_MAX}</div>
+              <div className="onboarding__field-counter">{request.length}/{REQUEST_MAX}</div>
               {fieldErrors.request && (
-                <p style={{ color: 'var(--error)', fontSize: 13, margin: '6px 0 0' }}>{fieldErrors.request}</p>
+                <p className="onboarding__field-error">{fieldErrors.request}</p>
               )}
             </div>
 
-            <div className="ob2-field">
-              <span className="ob2-field-label">Срок сотрудничества</span>
-              <div className="ob2-toggle-group">
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">Срок сотрудничества</span>
+              <div className="onboarding__chips">
                 {COMMITMENTS.map((c) => (
                   <button
                     key={c}
                     type="button"
-                    className={`ob2-toggle${commitment === c ? ' active' : ''}`}
+                    className={
+                      'onboarding__chip' + (commitment === c ? ' onboarding__chip--active' : '')
+                    }
                     onClick={() => setCommitment(c)}
                   >
                     {c}
@@ -639,28 +622,25 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {error && (
-              <p style={{ color: 'var(--error)', fontSize: 13, margin: 0 }}>{error}</p>
-            )}
+            {error && <p className="onboarding__field-error">{error}</p>}
           </div>
-          )
-        })()}
+        )}
       </div>
 
       {/* Footer */}
-      <div className="ob2-footer">
+      <div className="onboarding__footer glass">
         {step > 1 && (
-          <button type="button" className="ob2-btn-ghost" onClick={goBack}>
+          <button type="button" className="onboarding__btn-ghost" onClick={goBack}>
             Назад
           </button>
         )}
         <button
           type="button"
-          className="ob2-btn-primary"
+          className="onboarding__btn-primary"
           onClick={goNext}
           disabled={isPrimaryDisabled}
         >
-          {step === TOTAL ? (loading ? 'Сохраняем...' : 'Сохранить') : 'Далее'}
+          {step === TOTAL ? (loading ? 'Сохраняем…' : 'Сохранить') : 'Далее →'}
         </button>
       </div>
     </div>

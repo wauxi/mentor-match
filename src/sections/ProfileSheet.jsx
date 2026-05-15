@@ -57,11 +57,11 @@ export default function ProfileSheet({ profile, onClose, showActions = false, on
   const showAvatarImage = profile.avatar_url && !avatarFailed
   const profileColor = profile.color || getProfileColor(profile.id ?? profile.name)
 
-  const baseTransform = visible ? 'translateY(0)' : 'translateY(100%)'
+  const baseOffset = visible ? '0px' : '100%'
   const panelStyle = {
     transform: dragging || dragOffset
-      ? `translateY(calc(${baseTransform} + ${dragOffset}px))`
-      : baseTransform,
+      ? `translateY(calc(${baseOffset} + ${dragOffset}px))`
+      : `translateY(${baseOffset})`,
     transition: dragging ? 'none' : 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
   }
 

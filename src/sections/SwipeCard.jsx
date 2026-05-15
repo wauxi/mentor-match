@@ -18,6 +18,8 @@ export default function SwipeCard({ candidate }) {
           src={candidate.avatar_url}
           alt=""
           className="swipe-card__photo-img"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
           onError={() => setAvatarFailed(true)}
         />
       ) : (

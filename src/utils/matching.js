@@ -112,9 +112,13 @@ export function scoreCandidate(myProfile, candidate) {
   }
 
   const goalKeywords = extractKeywords(getGoalText(myProfile))
-  const candidateGoalBlob = normalizeText(`${candidate?.bio ?? ''} ${(candidate?.tags ?? []).join(' ')}`)
+  const candidateGoalBlob = normalizeText(
+    `${candidate?.bio ?? ''} ${candidate?.request ?? ''} ${candidate?.goal ?? ''} ${(candidate?.tags ?? []).join(' ')}`,
+  )
   const matchedKeywords = goalKeywords.filter((keyword) => candidateGoalBlob.includes(keyword))
-  const goalScore = goalKeywords.length ? matchedKeywords.length / goalKeywords.length : 0
+  const goalScore = goalKeywords.length
+    ? Math.min(1, matchedKeywords.length / Math.min(goalKeywords.length, 3))
+    : 1
   if (goalScore > 0) {
     reasons.push('Кандидат релевантен вашей цели')
   }
@@ -128,9 +132,18 @@ export function scoreCandidate(myProfile, candidate) {
 
   const myLevel = levelToNumber(myProfile?.current_level)
   const candidateLevel = levelToNumber(candidate?.current_level)
-  const levelDiff = Math.abs(myLevel - candidateLevel)
-  const levelScore = Math.max(0, 1 - levelDiff / 3)
-  if (levelScore >= 0.66) {
+  const levelDelta = candidateLevel - myLevel
+
+  let levelScore
+  if (levelDelta === 1 || levelDelta === 2) levelScore = 1
+  else if (levelDelta === 0) levelScore = 0.6
+  else if (levelDelta === 3) levelScore = 0.5
+  else if (levelDelta >= 4) levelScore = 0.25
+  else levelScore = 0
+
+  if (levelScore >= 0.9) {
+    reasons.push('Идеальная разница в уровне')
+  } else if (levelScore >= 0.6) {
     reasons.push('Близкий уровень взаимодействия')
   }
 

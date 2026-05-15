@@ -30,23 +30,19 @@ const BASE_SKILLS = [
 ]
 
 const TOTAL = 3
-const STEP_TITLES = ['О себе', 'Параметры', 'Цели']
+const STEP_TITLES = ['О себе', 'Цели', 'Параметры']
+const REQUIRED_ERROR = 'Обязательное поле'
+
+const STEP_FIELD_ORDER = {
+  1: ['role', 'name'],
+  2: ['goal', 'request', 'industry', 'level'],
+  3: ['format', 'availability', 'skills', 'commitment'],
+}
 
 const autoResize = (el) => {
   if (!el) return
   el.style.height = 'auto'
   el.style.height = `${el.scrollHeight}px`
-}
-
-const getRequiredFieldErrors = ({ name, goal, request }, role = 'mentee') => {
-  const copy = ROLE_COPY[role] ?? ROLE_COPY.mentee
-  const errors = {}
-
-  if (!name.trim()) errors.name = 'Имя обязательно'
-  if (!goal.trim()) errors.goal = `${copy.goalLabel} обязательна`
-  if (!request.trim()) errors.request = `${copy.requestLabel} обязателен`
-
-  return errors
 }
 
 export default function OnboardingPage() {
@@ -58,6 +54,19 @@ export default function OnboardingPage() {
   const bioRef = useRef(null)
   const goalRef = useRef(null)
   const requestRef = useRef(null)
+
+  const fieldRefs = {
+    role: useRef(null),
+    name: useRef(null),
+    goal: useRef(null),
+    request: useRef(null),
+    industry: useRef(null),
+    level: useRef(null),
+    format: useRef(null),
+    availability: useRef(null),
+    skills: useRef(null),
+    commitment: useRef(null),
+  }
 
   const [profileLoading, setProfileLoading] = useState(true)
   const [step, setStep] = useState(1)
@@ -168,31 +177,62 @@ export default function OnboardingPage() {
 
   const allSkills = [...BASE_SKILLS, ...extraSkills.filter((t) => !BASE_SKILLS.includes(t))]
 
+  const clearError = (key) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
+
   const toggleSkill = (skill) => {
-    setSkills((prev) =>
-      prev.includes(skill)
+    setSkills((prev) => {
+      const next = prev.includes(skill)
         ? prev.filter((s) => s !== skill)
         : prev.length >= 8 ? prev : [...prev, skill]
-    )
+      if (next.length > 0) clearError('skills')
+      return next
+    })
+  }
+
+  const validateStep = (stepNum) => {
+    const errors = {}
+    if (stepNum === 1) {
+      if (!role) errors.role = REQUIRED_ERROR
+      if (!name.trim()) errors.name = REQUIRED_ERROR
+    } else if (stepNum === 2) {
+      if (!goal.trim()) errors.goal = REQUIRED_ERROR
+      if (!request.trim()) errors.request = REQUIRED_ERROR
+      if (!industry) errors.industry = REQUIRED_ERROR
+      if (!level) errors.level = REQUIRED_ERROR
+    } else if (stepNum === 3) {
+      if (!format) errors.format = REQUIRED_ERROR
+      if (!String(availability).trim()) errors.availability = REQUIRED_ERROR
+      if (skills.length === 0) errors.skills = REQUIRED_ERROR
+      if (!commitment) errors.commitment = REQUIRED_ERROR
+    }
+    return errors
+  }
+
+  const scrollToFirstError = (errors, stepNum) => {
+    const firstKey = STEP_FIELD_ORDER[stepNum].find((k) => errors[k])
+    if (!firstKey) return
+    const el = fieldRefs[firstKey]?.current
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (typeof el.focus === 'function' && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+      try { el.focus({ preventScroll: true }) } catch { el.focus() }
+    }
   }
 
   const goNext = () => {
-    const requiredErrors = getRequiredFieldErrors({ name, goal, request }, role)
-
-    if (step === 1 && requiredErrors.name) {
-      setFieldErrors((prev) => ({ ...prev, name: requiredErrors.name }))
+    const errs = validateStep(step)
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...errs }))
+      requestAnimationFrame(() => scrollToFirstError(errs, step))
       return
     }
-
-    if (step === TOTAL && (requiredErrors.goal || requiredErrors.request)) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        ...(requiredErrors.goal ? { goal: requiredErrors.goal } : {}),
-        ...(requiredErrors.request ? { request: requiredErrors.request } : {}),
-      }))
-      return
-    }
-
     if (step < TOTAL) {
       setStep((s) => s + 1)
     } else {
@@ -205,17 +245,10 @@ export default function OnboardingPage() {
   }
 
   const handleSave = async () => {
-    const trimmedName = name.trim()
-    const trimmedGoal = goal.trim()
-    const trimmedRequest = request.trim()
-    const requiredErrors = getRequiredFieldErrors({
-      name: trimmedName,
-      goal: trimmedGoal,
-      request: trimmedRequest,
-    }, role)
-
-    if (Object.keys(requiredErrors).length > 0) {
-      setFieldErrors((prev) => ({ ...prev, ...requiredErrors }))
+    const errs = validateStep(3)
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, ...errs }))
+      requestAnimationFrame(() => scrollToFirstError(errs, 3))
       return
     }
 
@@ -229,17 +262,17 @@ export default function OnboardingPage() {
       }
 
       await upsertOnboardingProfile(user.id, {
-        name: trimmedName,
+        name: name.trim(),
         role,
         bio,
         industry,
-        goal: trimmedGoal,
+        goal: goal.trim(),
         format: format || null,
         commitment,
         tags: skills,
         current_level: level,
         availability,
-        request: trimmedRequest,
+        request: request.trim(),
         avatar_url: nextAvatarUrl ?? null,
       })
       localStorage.removeItem(storageKey)
@@ -253,10 +286,6 @@ export default function OnboardingPage() {
     }
   }
 
-  const stepOneValid = !getRequiredFieldErrors({ name, goal: 'ok', request: 'ok' }, role).name
-  const stepThreeErrors = getRequiredFieldErrors({ name: 'ok', goal, request }, role)
-  const stepThreeValid = !stepThreeErrors.goal && !stepThreeErrors.request
-  const isPrimaryDisabled = loading || (step === 1 && !stepOneValid) || (step === TOTAL && !stepThreeValid)
   const copy = ROLE_COPY[role] ?? ROLE_COPY.mentee
 
   if (profileLoading) {
@@ -326,9 +355,14 @@ export default function OnboardingPage() {
             </div>
 
             {/* Role */}
-            <div className="onboarding__field">
+            <div className="onboarding__field" ref={fieldRefs.role}>
               <span className="onboarding__field-label">Я являюсь</span>
-              <div className="onboarding__toggle-row">
+              <div
+                className={
+                  'onboarding__toggle-row' +
+                  (fieldErrors.role ? ' onboarding__chips--error' : '')
+                }
+              >
                 {[
                   { value: 'mentor', label: 'Наставник' },
                   { value: 'mentee', label: 'Наставляемый' },
@@ -339,18 +373,25 @@ export default function OnboardingPage() {
                     className={
                       'onboarding__chip' + (role === r.value ? ' onboarding__chip--active' : '')
                     }
-                    onClick={() => setRole(r.value)}
+                    onClick={() => {
+                      setRole(r.value)
+                      clearError('role')
+                    }}
                   >
                     {r.label}
                   </button>
                 ))}
               </div>
+              {fieldErrors.role && (
+                <p className="onboarding__field-error">{fieldErrors.role}</p>
+              )}
             </div>
 
             {/* Name */}
             <div className="onboarding__field">
               <span className="onboarding__field-label">Имя</span>
               <input
+                ref={fieldRefs.name}
                 className={
                   'onboarding__input' + (fieldErrors.name ? ' onboarding__input--error' : '')
                 }
@@ -363,13 +404,7 @@ export default function OnboardingPage() {
                 onChange={(e) => {
                   const v = e.target.value
                   setName(v)
-                  if (v.trim()) {
-                    setFieldErrors((prev) => {
-                      if (!prev.name) return prev
-                      const { name: _omit, ...rest } = prev
-                      return rest
-                    })
-                  }
+                  if (v.trim()) clearError('name')
                 }}
               />
               <div className="onboarding__field-counter">{name.length}/{NAME_MAX}</div>
@@ -399,11 +434,68 @@ export default function OnboardingPage() {
 
         {step === 2 && (
           <div className="onboarding__step" key="step2">
-            <h1 className="onboarding__heading">Параметры подбора</h1>
+            <h1 className="onboarding__heading">
+              {role === 'mentor' ? 'О вашей работе' : 'Ваши цели'}
+            </h1>
 
             <div className="onboarding__field">
+              <span className="onboarding__field-label">{copy.goalLabel}</span>
+              <textarea
+                ref={(el) => { goalRef.current = el; fieldRefs.goal.current = el }}
+                rows={4}
+                className={
+                  'onboarding__input onboarding__input--textarea' +
+                  (fieldErrors.goal ? ' onboarding__input--error' : '')
+                }
+                placeholder={copy.goalPlaceholder}
+                value={goal}
+                maxLength={GOAL_MAX}
+                aria-invalid={Boolean(fieldErrors.goal)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setGoal(v)
+                  if (v.trim()) clearError('goal')
+                }}
+              />
+              <div className="onboarding__field-counter">{goal.length}/{GOAL_MAX}</div>
+              {fieldErrors.goal && (
+                <p className="onboarding__field-error">{fieldErrors.goal}</p>
+              )}
+            </div>
+
+            <div className="onboarding__field">
+              <span className="onboarding__field-label">{copy.requestLabel}</span>
+              <textarea
+                ref={(el) => { requestRef.current = el; fieldRefs.request.current = el }}
+                rows={4}
+                className={
+                  'onboarding__input onboarding__input--textarea' +
+                  (fieldErrors.request ? ' onboarding__input--error' : '')
+                }
+                placeholder={copy.requestPlaceholder}
+                value={request}
+                maxLength={REQUEST_MAX}
+                aria-invalid={Boolean(fieldErrors.request)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setRequest(v)
+                  if (v.trim()) clearError('request')
+                }}
+              />
+              <div className="onboarding__field-counter">{request.length}/{REQUEST_MAX}</div>
+              {fieldErrors.request && (
+                <p className="onboarding__field-error">{fieldErrors.request}</p>
+              )}
+            </div>
+
+            <div className="onboarding__field" ref={fieldRefs.industry}>
               <span className="onboarding__field-label">Индустрия</span>
-              <div className="onboarding__chips">
+              <div
+                className={
+                  'onboarding__chips' +
+                  (fieldErrors.industry ? ' onboarding__chips--error' : '')
+                }
+              >
                 {INDUSTRIES.map((ind) => (
                   <button
                     key={ind}
@@ -411,17 +503,29 @@ export default function OnboardingPage() {
                     className={
                       'onboarding__chip' + (industry === ind ? ' onboarding__chip--active' : '')
                     }
-                    onClick={() => setIndustry(industry === ind ? '' : ind)}
+                    onClick={() => {
+                      const next = industry === ind ? '' : ind
+                      setIndustry(next)
+                      if (next) clearError('industry')
+                    }}
                   >
                     {ind}
                   </button>
                 ))}
               </div>
+              {fieldErrors.industry && (
+                <p className="onboarding__field-error">{fieldErrors.industry}</p>
+              )}
             </div>
 
-            <div className="onboarding__field">
+            <div className="onboarding__field" ref={fieldRefs.level}>
               <span className="onboarding__field-label">Уровень</span>
-              <div className="onboarding__chips">
+              <div
+                className={
+                  'onboarding__chips' +
+                  (fieldErrors.level ? ' onboarding__chips--error' : '')
+                }
+              >
                 {LEVELS.map((l) => (
                   <button
                     key={l}
@@ -429,17 +533,34 @@ export default function OnboardingPage() {
                     className={
                       'onboarding__chip' + (level === l ? ' onboarding__chip--active' : '')
                     }
-                    onClick={() => setLevel(l)}
+                    onClick={() => {
+                      setLevel(l)
+                      clearError('level')
+                    }}
                   >
                     {l}
                   </button>
                 ))}
               </div>
+              {fieldErrors.level && (
+                <p className="onboarding__field-error">{fieldErrors.level}</p>
+              )}
             </div>
+          </div>
+        )}
 
-            <div className="onboarding__field">
+        {step === 3 && (
+          <div className="onboarding__step" key="step3">
+            <h1 className="onboarding__heading">Параметры подбора</h1>
+
+            <div className="onboarding__field" ref={fieldRefs.format}>
               <span className="onboarding__field-label">Формат</span>
-              <div className="onboarding__chips">
+              <div
+                className={
+                  'onboarding__chips' +
+                  (fieldErrors.format ? ' onboarding__chips--error' : '')
+                }
+              >
                 {PROFILE_FORMAT_OPTIONS.map((f) => (
                   <button
                     key={f.value}
@@ -447,20 +568,27 @@ export default function OnboardingPage() {
                     className={
                       'onboarding__chip' + (format === f.value ? ' onboarding__chip--active' : '')
                     }
-                    onClick={() => setFormat(f.value)}
+                    onClick={() => {
+                      setFormat(f.value)
+                      clearError('format')
+                    }}
                   >
                     {f.label}
                   </button>
                 ))}
               </div>
+              {fieldErrors.format && (
+                <p className="onboarding__field-error">{fieldErrors.format}</p>
+              )}
             </div>
 
             <div className="onboarding__field">
               <span className="onboarding__field-label">Часов в неделю</span>
               <input
+                ref={fieldRefs.availability}
                 className={
                   'onboarding__input' +
-                  (availabilityError ? ' onboarding__input--error' : '')
+                  (availabilityError || fieldErrors.availability ? ' onboarding__input--error' : '')
                 }
                 type="text"
                 inputMode="numeric"
@@ -468,7 +596,7 @@ export default function OnboardingPage() {
                 enterKeyHint="done"
                 placeholder="Например, 4"
                 value={availability}
-                aria-invalid={Boolean(availabilityError)}
+                aria-invalid={Boolean(availabilityError || fieldErrors.availability)}
                 onChange={(e) => {
                   const digits = e.target.value.replace(/\D/g, '')
                   if (!digits) {
@@ -480,10 +608,12 @@ export default function OnboardingPage() {
                   if (parsed > 40) {
                     setAvailability('40')
                     setAvailabilityError('Максимум 40 часов в неделю')
+                    clearError('availability')
                     return
                   }
                   setAvailability(String(parsed))
                   setAvailabilityError('')
+                  clearError('availability')
                 }}
                 onBlur={() => {
                   if (availability === '') return
@@ -506,19 +636,27 @@ export default function OnboardingPage() {
                   setAvailabilityError('')
                 }}
               />
+              {fieldErrors.availability && !availabilityError && (
+                <p className="onboarding__field-error">{fieldErrors.availability}</p>
+              )}
               {availabilityError && (
                 <p className="onboarding__field-error">{availabilityError}</p>
               )}
             </div>
 
-            <div className="onboarding__field">
+            <div className="onboarding__field" ref={fieldRefs.skills}>
               <span className="onboarding__field-label">
                 Навыки
                 {skills.length > 0 && (
                   <span className="onboarding__field-label-muted"> · выбрано {skills.length}/8</span>
                 )}
               </span>
-              <div className="onboarding__chips">
+              <div
+                className={
+                  'onboarding__chips' +
+                  (fieldErrors.skills ? ' onboarding__chips--error' : '')
+                }
+              >
                 {allSkills.map((s) => (
                   <button
                     key={s}
@@ -532,81 +670,19 @@ export default function OnboardingPage() {
                   </button>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="onboarding__step" key="step3">
-            <h1 className="onboarding__heading">
-              {role === 'mentor' ? 'О вашей работе' : 'Ваши цели'}
-            </h1>
-
-            <div className="onboarding__field">
-              <span className="onboarding__field-label">{copy.goalLabel}</span>
-              <textarea
-                ref={goalRef}
-                rows={4}
-                className={
-                  'onboarding__input onboarding__input--textarea' +
-                  (fieldErrors.goal ? ' onboarding__input--error' : '')
-                }
-                placeholder={copy.goalPlaceholder}
-                value={goal}
-                maxLength={GOAL_MAX}
-                aria-invalid={Boolean(fieldErrors.goal)}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setGoal(v)
-                  if (v.trim()) {
-                    setFieldErrors((prev) => {
-                      if (!prev.goal) return prev
-                      const { goal: _omit, ...rest } = prev
-                      return rest
-                    })
-                  }
-                }}
-              />
-              <div className="onboarding__field-counter">{goal.length}/{GOAL_MAX}</div>
-              {fieldErrors.goal && (
-                <p className="onboarding__field-error">{fieldErrors.goal}</p>
+              {fieldErrors.skills && (
+                <p className="onboarding__field-error">{fieldErrors.skills}</p>
               )}
             </div>
 
-            <div className="onboarding__field">
-              <span className="onboarding__field-label">{copy.requestLabel}</span>
-              <textarea
-                ref={requestRef}
-                rows={4}
-                className={
-                  'onboarding__input onboarding__input--textarea' +
-                  (fieldErrors.request ? ' onboarding__input--error' : '')
-                }
-                placeholder={copy.requestPlaceholder}
-                value={request}
-                maxLength={REQUEST_MAX}
-                aria-invalid={Boolean(fieldErrors.request)}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setRequest(v)
-                  if (v.trim()) {
-                    setFieldErrors((prev) => {
-                      if (!prev.request) return prev
-                      const { request: _omit, ...rest } = prev
-                      return rest
-                    })
-                  }
-                }}
-              />
-              <div className="onboarding__field-counter">{request.length}/{REQUEST_MAX}</div>
-              {fieldErrors.request && (
-                <p className="onboarding__field-error">{fieldErrors.request}</p>
-              )}
-            </div>
-
-            <div className="onboarding__field">
+            <div className="onboarding__field" ref={fieldRefs.commitment}>
               <span className="onboarding__field-label">Срок сотрудничества</span>
-              <div className="onboarding__chips">
+              <div
+                className={
+                  'onboarding__chips' +
+                  (fieldErrors.commitment ? ' onboarding__chips--error' : '')
+                }
+              >
                 {COMMITMENTS.map((c) => (
                   <button
                     key={c}
@@ -614,12 +690,18 @@ export default function OnboardingPage() {
                     className={
                       'onboarding__chip' + (commitment === c ? ' onboarding__chip--active' : '')
                     }
-                    onClick={() => setCommitment(c)}
+                    onClick={() => {
+                      setCommitment(c)
+                      clearError('commitment')
+                    }}
                   >
                     {c}
                   </button>
                 ))}
               </div>
+              {fieldErrors.commitment && (
+                <p className="onboarding__field-error">{fieldErrors.commitment}</p>
+              )}
             </div>
 
             {error && <p className="onboarding__field-error">{error}</p>}
@@ -638,7 +720,7 @@ export default function OnboardingPage() {
           type="button"
           className="onboarding__btn-primary"
           onClick={goNext}
-          disabled={isPrimaryDisabled}
+          disabled={loading}
         >
           {step === TOTAL ? (loading ? 'Сохраняем…' : 'Сохранить') : 'Далее →'}
         </button>
